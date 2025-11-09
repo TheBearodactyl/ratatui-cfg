@@ -1,5 +1,7 @@
 #![allow(clippy::only_used_in_recursion)]
 
+pub use ratatui_cfg_derive::ConfigMenu;
+
 use {
     color_eyre::eyre::{Error, Result},
     ratatui::{
