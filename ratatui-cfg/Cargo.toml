@@ -2,6 +2,13 @@
 name = "ratatui-cfg"
 version = "0.1.0"
 edition = "2024"
+readme = "README.md"
+license = "MIT"
+description = "A settings menu generator for Ratatui"
+repository = "https://github.com/TheBearodactyl/ratatui-cfg"
+homepage = "https://github.com/TheBearodactyl/ratatui-cfg"
+keywords = ["tui", "ratatui", "configuration"]
+categories = ["command-line-interface", "config"]
 
 [dependencies]
 color-eyre = "0.6.5"
