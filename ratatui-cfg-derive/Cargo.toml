@@ -2,6 +2,13 @@
 name = "ratatui-cfg-derive"
 version = "0.1.0"
 edition = "2024"
+readme = "README.md"
+license = "MIT"
+description = "derive macro for ratatui-cfg"
+repository = "https://github.com/TheBearodactyl/ratatui-cfg"
+homepage = "https://github.com/TheBearodactyl/ratatui-cfg"
+keywords = ["tui", "ratatui", "configuration"]
+categories = ["command-line-interface", "config"]
 
 [lib]
 proc-macro = true
