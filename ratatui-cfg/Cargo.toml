@@ -1,0 +1,15 @@
+[package]
+name = "ratatui-cfg"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+color-eyre = "0.6.5"
+config = "0.15.18"
+crossterm = "0.29.0"
+ratatui = "0.29.0"
+ratatui-cfg-derive = { version = "0.1.0", path = "../ratatui-cfg-derive" }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.145"
+toml = "0.9.8"
+undo = "0.52.0"
