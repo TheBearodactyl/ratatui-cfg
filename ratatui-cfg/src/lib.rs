@@ -3,8 +3,6 @@
 //! This library provides automatic configuration menu generation for Rust types
 //! that implement the `ConfigMenuTrait` via the `#[derive(ConfigMenu)]` macro.
 
-use std::str::FromStr;
-
 pub use ratatui_cfg_derive::ConfigMenu;
 
 use {
@@ -17,7 +15,7 @@ use {
         widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
     },
     serde::{Deserialize, Serialize},
-    std::{any::Any, fmt::Debug, path::Path},
+    std::{any::Any, fmt::Debug, path::Path, str::FromStr},
     undo::{Edit, Record},
 };
 
