@@ -30,7 +30,7 @@ pub fn derive_config_menu(input: TokenStream) -> TokenStream {
                             },
                             quote! {
                                 Some(Box::new(|| {
-                                    <#inner_type_tokens as ::config_menu::ConfigMenuTrait>::get_field_metadata()
+                                    <#inner_type_tokens as ::ratatui_cfg::ConfigMenuTrait>::get_field_metadata()
                                 }))
                             },
                             quote! {
@@ -53,19 +53,19 @@ pub fn derive_config_menu(input: TokenStream) -> TokenStream {
                     };
 
                     quote! {
-                        ::config_menu::FieldMetadata {
+                        ::ratatui_cfg::FieldMetadata {
                             name: #field_name_str,
                             is_nested: #is_nested,
                             is_option: #is_option,
                             is_vec: #is_vec,
-                            field_type: ::config_menu::FieldType::from_str(#inner_type),
+                            field_type: ::ratatui_cfg::FieldType::from_str(#inner_type),
                             getter: Box::new(|config: &dyn std::any::Any| {
                                 config.downcast_ref::<#name>()
-                                    .map(|c| ::config_menu::format_field_value(&c.#field_name))
+                                    .map(|c| ::ratatui_cfg::format_field_value(&c.#field_name))
                             }),
                             setter: Box::new(|config: &mut dyn std::any::Any, value: String| {
                                 if let Some(c) = config.downcast_mut::<#name>() {
-                                    ::config_menu::parse_and_set(&mut c.#field_name, value)
+                                    ::ratatui_cfg::parse_and_set(&mut c.#field_name, value)
                                 } else {
                                     Err("Type mismatch".to_string())
                                 }
@@ -87,8 +87,8 @@ pub fn derive_config_menu(input: TokenStream) -> TokenStream {
     };
 
     let generated = quote! {
-        impl ::config_menu::ConfigMenuTrait for #name {
-            fn get_field_metadata() -> Vec<::config_menu::FieldMetadata> {
+        impl ::ratatui_cfg::ConfigMenuTrait for #name {
+            fn get_field_metadata() -> Vec<::ratatui_cfg::FieldMetadata> {
                 #field_metadata
             }
 

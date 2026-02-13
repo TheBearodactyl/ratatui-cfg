@@ -1,6 +1,6 @@
 [package]
 name = "ratatui-cfg"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 readme = "README.md"
 license = "MIT"
@@ -18,5 +18,5 @@ ratatui = "0.29.0"
 ratatui-cfg-derive = { version = "0.1.0", path = "../ratatui-cfg-derive" }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.145"
-toml = "0.9.8"
+toml = "1.0.1+spec-1.1.0"
 undo = "0.52.0"
