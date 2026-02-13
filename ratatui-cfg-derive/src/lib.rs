@@ -23,18 +23,18 @@ pub fn derive_config_menu(input: TokenStream) -> TokenStream {
                         let inner_type_tokens = &inner_type_ident;
                         (
                             quote! {
-                                Some(Box::new(|config: &dyn std::any::Any| -> Option<Box<dyn std::any::Any>> {
+                                Some(::std::boxed::Box::new(|config: &dyn ::std::any::Any| -> ::std::option::Option<::std::boxed::Box<dyn ::std::any::Any>> {
                                     config.downcast_ref::<#name>()
-                                        .map(|c| Box::new(c.#field_name.clone()) as Box<dyn std::any::Any>)
+                                        .map(|c| ::std::boxed::Box::new(c.#field_name.clone()) as ::std::boxed::Box<dyn ::std::any::Any>)
                                 }))
                             },
                             quote! {
-                                Some(Box::new(|| {
+                                Some(::std::boxed::Box::new(|| {
                                     <#inner_type_tokens as ::ratatui_cfg::ConfigMenuTrait>::get_field_metadata()
                                 }))
                             },
                             quote! {
-                                Some(Box::new(|config: &mut dyn std::any::Any, value: Box<dyn std::any::Any>| -> Result<(), String> {
+                                Some(::std::boxed::Box::new(|config: &mut dyn ::std::any::Any, value: ::std::boxed::Box<dyn ::std::any::Any>| -> ::std::result::Result<(), ::std::string::String> {
                                     if let Some(c) = config.downcast_mut::<#name>() {
                                         if let Some(nested) = value.downcast_ref::<#inner_type_tokens>() {
                                             c.#field_name = nested.clone();
@@ -58,12 +58,12 @@ pub fn derive_config_menu(input: TokenStream) -> TokenStream {
                             is_nested: #is_nested,
                             is_option: #is_option,
                             is_vec: #is_vec,
-                            field_type: ::ratatui_cfg::FieldType::from_str(#inner_type),
-                            getter: Box::new(|config: &dyn std::any::Any| {
+                            field_type: ::std::str::FromStr::from_str(#inner_type).unwrap_or(::ratatui_cfg::FieldType::Unknown),
+                            getter: ::std::boxed::Box::new(|config: &dyn ::std::any::Any| {
                                 config.downcast_ref::<#name>()
                                     .map(|c| ::ratatui_cfg::format_field_value(&c.#field_name))
                             }),
-                            setter: Box::new(|config: &mut dyn std::any::Any, value: String| {
+                            setter: ::std::boxed::Box::new(|config: &mut dyn ::std::any::Any, value: ::std::string::String| {
                                 if let Some(c) = config.downcast_mut::<#name>() {
                                     ::ratatui_cfg::parse_and_set(&mut c.#field_name, value)
                                 } else {
@@ -88,7 +88,7 @@ pub fn derive_config_menu(input: TokenStream) -> TokenStream {
 
     let generated = quote! {
         impl ::ratatui_cfg::ConfigMenuTrait for #name {
-            fn get_field_metadata() -> Vec<::ratatui_cfg::FieldMetadata> {
+            fn get_field_metadata() -> ::std::vec::Vec<::ratatui_cfg::FieldMetadata> {
                 #field_metadata
             }
 
@@ -96,11 +96,11 @@ pub fn derive_config_menu(input: TokenStream) -> TokenStream {
                 stringify!(#name)
             }
 
-            fn as_any(&self) -> &dyn std::any::Any {
+            fn as_any(&self) -> &dyn ::std::any::Any {
                 self
             }
 
-            fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+            fn as_any_mut(&mut self) -> &mut dyn ::std::any::Any {
                 self
             }
         }
@@ -116,20 +116,22 @@ fn analyze_type(ty: &Type) -> (bool, bool, bool, String, Option<&syn::Ident>) {
             let ident = &last_segment.ident;
             let ident_str = ident.to_string();
 
-            if ident_str == "Option"
-                && let PathArguments::AngleBracketed(args) = &last_segment.arguments
-                && let Some(GenericArgument::Type(inner)) = args.args.first()
-            {
-                let (nested, _, _, inner_type, inner_ident) = analyze_type(inner);
-                return (nested, true, false, inner_type, inner_ident);
+            if ident_str == "Option" {
+                if let PathArguments::AngleBracketed(args) = &last_segment.arguments {
+                    if let Some(GenericArgument::Type(inner)) = args.args.first() {
+                        let (nested, _, _, inner_type, inner_ident) = analyze_type(inner);
+                        return (nested, true, false, inner_type, inner_ident);
+                    }
+                }
             }
 
-            if ident_str == "Vec"
-                && let PathArguments::AngleBracketed(args) = &last_segment.arguments
-                && let Some(GenericArgument::Type(inner)) = args.args.first()
-            {
-                let (nested, _, _, inner_type, inner_ident) = analyze_type(inner);
-                return (nested, false, true, inner_type, inner_ident);
+            if ident_str == "Vec" {
+                if let PathArguments::AngleBracketed(args) = &last_segment.arguments {
+                    if let Some(GenericArgument::Type(inner)) = args.args.first() {
+                        let (nested, _, _, inner_type, inner_ident) = analyze_type(inner);
+                        return (nested, false, true, inner_type, inner_ident);
+                    }
+                }
             }
 
             let is_primitive = matches!(

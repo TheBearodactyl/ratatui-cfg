@@ -1,4 +1,9 @@
-#![allow(clippy::only_used_in_recursion)]
+//! A configuration menu system for ratatui applications.
+//!
+//! This library provides automatic configuration menu generation for Rust types
+//! that implement the `ConfigMenuTrait` via the `#[derive(ConfigMenu)]` macro.
+
+use std::str::FromStr;
 
 pub use ratatui_cfg_derive::ConfigMenu;
 
@@ -36,6 +41,32 @@ pub enum FieldType {
     F64,
     Nested,
     Unknown,
+}
+
+impl FromStr for FieldType {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "String" => Ok(FieldType::String),
+            "bool" => Ok(FieldType::Bool),
+            "i8" => Ok(FieldType::I8),
+            "i16" => Ok(FieldType::I16),
+            "i32" => Ok(FieldType::I32),
+            "i64" => Ok(FieldType::I64),
+            "i128" => Ok(FieldType::I128),
+            "isize" => Ok(FieldType::Isize),
+            "u8" => Ok(FieldType::U8),
+            "u16" => Ok(FieldType::U16),
+            "u32" => Ok(FieldType::U32),
+            "u64" => Ok(FieldType::U64),
+            "u128" => Ok(FieldType::U128),
+            "usize" => Ok(FieldType::Usize),
+            "f32" => Ok(FieldType::F32),
+            "f64" => Ok(FieldType::F64),
+            _ => Ok(FieldType::Nested),
+        }
+    }
 }
 
 type Getter = Box<dyn Fn(&dyn Any) -> Option<String>>;
@@ -95,117 +126,23 @@ impl ParsableField for bool {
     }
 }
 
-impl ParsableField for i8 {
-    fn parse_from_string(value: String) -> Result<Self, String> {
-        value
-            .parse()
-            .map_err(|_| format!("Failed to parse '{}'", value))
-    }
+macro_rules! impl_parsable_for_primitives {
+    ($($ty:ty),*) => {
+        $(
+            impl ParsableField for $ty {
+                fn parse_from_string(value: String) -> Result<Self, String> {
+                    value
+                        .parse()
+                        .map_err(|_| format!("Failed to parse '{}'", value))
+                }
+            }
+        )*
+    };
 }
 
-impl ParsableField for i16 {
-    fn parse_from_string(value: String) -> Result<Self, String> {
-        value
-            .parse()
-            .map_err(|_| format!("Failed to parse '{}'", value))
-    }
-}
-
-impl ParsableField for i32 {
-    fn parse_from_string(value: String) -> Result<Self, String> {
-        value
-            .parse()
-            .map_err(|_| format!("Failed to parse '{}'", value))
-    }
-}
-
-impl ParsableField for i64 {
-    fn parse_from_string(value: String) -> Result<Self, String> {
-        value
-            .parse()
-            .map_err(|_| format!("Failed to parse '{}'", value))
-    }
-}
-
-impl ParsableField for i128 {
-    fn parse_from_string(value: String) -> Result<Self, String> {
-        value
-            .parse()
-            .map_err(|_| format!("Failed to parse '{}'", value))
-    }
-}
-
-impl ParsableField for isize {
-    fn parse_from_string(value: String) -> Result<Self, String> {
-        value
-            .parse()
-            .map_err(|_| format!("Failed to parse '{}'", value))
-    }
-}
-
-impl ParsableField for u8 {
-    fn parse_from_string(value: String) -> Result<Self, String> {
-        value
-            .parse()
-            .map_err(|_| format!("Failed to parse '{}'", value))
-    }
-}
-
-impl ParsableField for u16 {
-    fn parse_from_string(value: String) -> Result<Self, String> {
-        value
-            .parse()
-            .map_err(|_| format!("Failed to parse '{}'", value))
-    }
-}
-
-impl ParsableField for u32 {
-    fn parse_from_string(value: String) -> Result<Self, String> {
-        value
-            .parse()
-            .map_err(|_| format!("Failed to parse '{}'", value))
-    }
-}
-
-impl ParsableField for u64 {
-    fn parse_from_string(value: String) -> Result<Self, String> {
-        value
-            .parse()
-            .map_err(|_| format!("Failed to parse '{}'", value))
-    }
-}
-
-impl ParsableField for u128 {
-    fn parse_from_string(value: String) -> Result<Self, String> {
-        value
-            .parse()
-            .map_err(|_| format!("Failed to parse '{}'", value))
-    }
-}
-
-impl ParsableField for usize {
-    fn parse_from_string(value: String) -> Result<Self, String> {
-        value
-            .parse()
-            .map_err(|_| format!("Failed to parse '{}'", value))
-    }
-}
-
-impl ParsableField for f32 {
-    fn parse_from_string(value: String) -> Result<Self, String> {
-        value
-            .parse()
-            .map_err(|_| format!("Failed to parse '{}'", value))
-    }
-}
-
-impl ParsableField for f64 {
-    fn parse_from_string(value: String) -> Result<Self, String> {
-        value
-            .parse()
-            .map_err(|_| format!("Failed to parse '{}'", value))
-    }
-}
+impl_parsable_for_primitives!(
+    i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize, f32, f64
+);
 
 impl<T> ParsableField for T
 where
@@ -267,56 +204,48 @@ impl<T: ConfigMenuTrait> MenuController<T> {
     }
 
     pub fn start_editing(&mut self) {
-        if let Some(item) = self.menu_state.get_current_item()
-            && !item.is_submenu
-            && !item.is_vec_container
-        {
-            self.editing_mode = true;
+        let Some(item) = self.menu_state.get_current_item() else {
+            return;
+        };
 
-            if item.field_type == FieldType::String {
-                self.edit_buffer = strip_debug_quotes(&item.value);
-            } else {
-                self.edit_buffer = item.value.clone();
-            }
-
-            self.edit_cursor = self.edit_buffer.len();
+        if item.is_submenu || item.is_vec_container {
+            return;
         }
+
+        self.editing_mode = true;
+
+        if item.field_type == FieldType::String {
+            self.edit_buffer = strip_debug_quotes(&item.value);
+        } else {
+            self.edit_buffer = item.value.clone();
+        }
+
+        self.edit_cursor = self.edit_buffer.len();
     }
 
     pub fn toggle_boolean(&mut self) -> Result<(), String> {
-        if let Some(item) = self.menu_state.get_current_item()
-            && item.field_type == FieldType::Bool
-            && !item.is_submenu
-            && !item.is_vec_container
-        {
-            let new_value = if item.value == "true" {
-                "false"
-            } else {
-                "true"
-            };
+        let Some(item) = self.menu_state.get_current_item() else {
+            return Ok(());
+        };
 
-            let field_path = self.menu_state.get_current_field_path();
-            let result = self.apply_edit_at_path(&field_path, new_value);
-
-            if result.is_ok() {
-                let current_path = self.menu_state.get_navigation_path();
-                self.menu_state = MenuState::new(&self.config);
-
-                for field_name in current_path {
-                    if let Err(e) = self
-                        .menu_state
-                        .enter_submenu_by_name(&self.config, &field_name)
-                    {
-                        eprintln!("Failed to restore navigation: {}", e);
-                        break;
-                    }
-                }
-            }
-
-            result
-        } else {
-            Ok(())
+        if item.field_type != FieldType::Bool || item.is_submenu || item.is_vec_container {
+            return Ok(());
         }
+
+        let new_value = if item.value == "true" {
+            "false"
+        } else {
+            "true"
+        };
+
+        let field_path = self.menu_state.get_current_field_path();
+        let result = self.apply_edit_at_path(&field_path, new_value);
+
+        if result.is_ok() {
+            self.refresh_menu_state()?;
+        }
+
+        result
     }
 
     pub fn finish_editing(&mut self) -> Result<(), String> {
@@ -330,22 +259,24 @@ impl<T: ConfigMenuTrait> MenuController<T> {
         let result = self.apply_edit_at_path(&field_path, &new_value);
 
         if result.is_ok() {
-            let current_path = self.menu_state.get_navigation_path();
-            self.menu_state = MenuState::new(&self.config);
-
-            for field_name in current_path {
-                if let Err(e) = self
-                    .menu_state
-                    .enter_submenu_by_name(&self.config, &field_name)
-                {
-                    eprintln!("Failed to restore navigation: {}", e);
-                    break;
-                }
-            }
+            self.refresh_menu_state()?;
         }
 
         self.editing_mode = false;
         result
+    }
+
+    fn refresh_menu_state(&mut self) -> Result<(), String> {
+        let current_path = self.menu_state.get_navigation_path();
+        self.menu_state = MenuState::new(&self.config);
+
+        for field_name in current_path {
+            self.menu_state
+                .enter_submenu_by_name(&self.config, &field_name)
+                .map_err(|e| format!("Failed to restore navigation: {}", e))?;
+        }
+
+        Ok(())
     }
 
     fn apply_edit_at_path(&mut self, field_path: &[String], new_value: &str) -> Result<(), String> {
